@@ -2,7 +2,8 @@
    🍏 Website Monitor Dashboard — Final Stable Apple Dark Theme
    ============================================================ */
 
-const METRICS_URL = "./generated/metrics.json";
+
+const METRICS_URL = "data/dashboard/generated/metrics.json";
 const BROKEN_CSV_FALLBACK = "../reports/broken_links_latest.csv";
 const PAGE_SIZE = 25;
 const chartCache = {};
@@ -28,11 +29,30 @@ const exists = (id) => !!document.getElementById(id);
 
 async function loadJSON(url) {
   try {
-    const r = await fetch(url + "?t=" + Date.now());
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    return await r.json();
-  } catch (e) {
-    console.warn("⚠️ metrics.json load failed", e);
+    // Normalize to absolute root (Netlify-safe)
+    const base = window.location.origin;
+    const normalizedUrl = url.startsWith("http")
+      ? url
+      : `${base.replace(/\/$/, "")}/${url.replace(/^\/+/, "")}`;
+
+    // Add cache buster
+    const finalUrl = `${normalizedUrl}?t=${Date.now()}`;
+
+    console.log("📦 Loading metrics from:", finalUrl);
+    const res = await fetch(finalUrl, { cache: "no-store" });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} — ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    if (!data || typeof data !== "object") {
+      throw new Error("Invalid JSON structure in metrics file.");
+    }
+
+    return data;
+  } catch (err) {
+    console.warn("⚠️ metrics.json load failed:", err.message);
     return null;
   }
 }
@@ -72,9 +92,8 @@ function updateHealthBar(data) {
         completed: "⚫",
         failed: "🔴",
       }[state] || "⚪";
-    currentEl.textContent = `${emoji} Run #${runNum} — ${
-      state.charAt(0).toUpperCase() + state.slice(1)
-    }`;
+    currentEl.textContent = `${emoji} Run #${runNum} — ${state.charAt(0).toUpperCase() + state.slice(1)
+      }`;
   }
 
   if (nextEl) {
@@ -142,7 +161,7 @@ function makeLineConfig(labels, datasets, opts = {}) {
   };
 }
 
-function makeBarConfig(labels, datasets, maxY = null) { 
+function makeBarConfig(labels, datasets, maxY = null) {
   return {
     type: "bar",
     data: { labels, datasets },
@@ -325,7 +344,7 @@ function renderLocaleCharts(metrics) {
           )
         );
       })
-      .catch(() => {});
+      .catch(() => { });
   });
 }
 
@@ -362,7 +381,7 @@ function renderErrorBreakdownFromCSV() {
         },
       });
     })
-    .catch(() => {});
+    .catch(() => { });
 }
 
 // ------------------ BROKEN LINKS TABLE ------------------
