@@ -50,7 +50,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add reports generated || true
+          git add data/reports data/dashboard/generated || true
           git commit -m "🔁 Auto-update metrics & dashboard [skip ci]" || echo "No changes to commit."
           git push origin main || echo "⚠️ No push access — skipping."
 
