@@ -1,0 +1,4 @@
+run_time,pages_checked,total_links_found,unique_links,duplicate_count,crawler_efficiency,broken_links,duration_sec,duration_mins,status,locale,success_rate
+2025-10-28 16:27:45,272,2268,2268,0,100.0,99.0,578.94,9.65,⚠️ 99 broken,es,95.63
+2025-10-28 17:07:31,es,272,2264,2264,0.0,100.0,103.0,592.75,9.88,95.45,⚠️ 103 broken
+2025-10-29 10:25:55,es,272,2269,2269,0.0,100.0,103.0,425.39,7.09,95.46,⚠️ 103 broken

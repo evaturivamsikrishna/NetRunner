@@ -1,0 +1,8 @@
+requests
+beautifulsoup4
+PyYAML
+tqdm 
+pandas
+aiohttp
+aiodns
+async-timeout

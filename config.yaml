@@ -1,0 +1,12 @@
+input_csv: 'data/Live_Kwalee_urls.csv'
+
+email:
+  from: vamsi.evaturi@gmail.com
+  app_password: iwic dfml wklv nutr
+  to:
+    - vamsi.evaturi@gmail.com 
+    - vamc.k0407@gmail.com
+  subject: "Website Daily Report {today}" 
+  body: "Please find the attached daily report of website statuses."
+  smtp_server: smtp.gmail.com
+  smtp_port: 587

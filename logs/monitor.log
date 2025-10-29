@@ -1,0 +1,39 @@
+2025-10-28 16:09:06,069 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/de-de/blog/creative-work-wednesdays returned 404
+2025-10-28 16:09:39,260 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/de-de/blog/what-are-creative-wednesdays returned 404
+2025-10-28 16:09:45,237 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/de-de/blog/women-in-games-with-jen-flannery returned 404
+2025-10-28 16:18:06,487 | INFO     | website-monitor | checker.py:181 | ✅ 2264 links checked — 99 broken.
+2025-10-28 16:18:45,903 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/es-es/blog/creative-work-wednesdays returned 404
+2025-10-28 16:19:22,156 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/es-es/blog/what-are-creative-wednesdays returned 404
+2025-10-28 16:19:25,043 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/es-es/blog/women-in-games-with-jen-flannery returned 404
+2025-10-28 16:27:45,438 | INFO     | website-monitor | checker.py:181 | ✅ 2268 links checked — 99 broken.
+2025-10-28 16:28:18,472 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/blog/creative-work-wednesdays returned 404
+2025-10-28 16:28:46,845 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/blog/what-are-creative-wednesdays returned 404
+2025-10-28 16:28:49,421 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/blog/women-in-games-with-jen-flannery returned 404
+2025-10-28 16:36:24,051 | INFO     | website-monitor | checker.py:181 | ✅ 2452 links checked — 100 broken.
+2025-10-28 16:36:24,081 | ERROR    | website-monitor | main.py:129 | [ERROR] Failed to update metrics.json with broken links: name 'csv' is not defined
+2025-10-28 16:49:54,314 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/de-de/blog/creative-work-wednesdays returned 404
+2025-10-28 16:50:21,579 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/de-de/blog/what-are-creative-wednesdays returned 404
+2025-10-28 16:50:23,507 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/de-de/blog/women-in-games-with-jen-flannery returned 404
+2025-10-28 16:57:39,203 | INFO     | website-monitor | checker.py:181 | ✅ 2263 links checked — 108 broken.
+2025-10-28 16:57:43,333 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/es-es/fun-games/lets-be-cops-3d returned 404
+2025-10-28 16:58:09,280 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/es-es/blog/creative-work-wednesdays returned 404
+2025-10-28 16:58:35,772 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/es-es/blog/what-are-creative-wednesdays returned 404
+2025-10-28 16:58:37,945 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/es-es/blog/women-in-games-with-jen-flannery returned 404
+2025-10-28 17:07:31,959 | INFO     | website-monitor | checker.py:181 | ✅ 2264 links checked — 103 broken.
+2025-10-28 17:07:59,664 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/blog/creative-work-wednesdays returned 404
+2025-10-28 17:08:31,419 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/blog/what-are-creative-wednesdays returned 404
+2025-10-28 17:08:33,528 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/blog/women-in-games-with-jen-flannery returned 404
+2025-10-28 17:15:28,085 | INFO     | website-monitor | checker.py:181 | ✅ 2452 links checked — 101 broken.
+2025-10-29 10:11:52,221 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/de-de/blog/creative-work-wednesdays returned 404
+2025-10-29 10:12:21,276 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/de-de/blog/what-are-creative-wednesdays returned 404
+2025-10-29 10:12:23,848 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/de-de/blog/women-in-games-with-jen-flannery returned 404
+2025-10-29 10:18:50,501 | INFO     | website-monitor | checker.py:181 | ✅ 2263 links checked — 105 broken.
+2025-10-29 10:19:18,380 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/es-es/blog/creative-work-wednesdays returned 404
+2025-10-29 10:19:45,416 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/es-es/blog/what-are-creative-wednesdays returned 404
+2025-10-29 10:19:47,897 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/es-es/blog/women-in-games-with-jen-flannery returned 404
+2025-10-29 10:25:55,902 | INFO     | website-monitor | checker.py:181 | ✅ 2269 links checked — 103 broken.
+2025-10-29 10:26:26,187 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/blog/creative-work-wednesdays returned 404
+2025-10-29 10:26:46,701 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/blog/tens-launching-5th-november returned 404
+2025-10-29 10:26:51,300 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/blog/what-are-creative-wednesdays returned 404
+2025-10-29 10:26:54,047 | WARNING  | website-monitor | checker.py:68 | [WARN] https://kwalee.com/blog/women-in-games-with-jen-flannery returned 404
+2025-10-29 10:32:46,717 | INFO     | website-monitor | checker.py:181 | ✅ 2448 links checked — 98 broken.

@@ -1,0 +1,13 @@
+[INFO] Reconciling schema for data/reports/summary_history_es.csv
+  → No missing columns.
+  → Extra columns: ['locale', 'success_rate'] (kept for safety)
+[SUCCESS] data/reports/summary_history_es.csv schema normalized (12 columns).
+[INFO] Reconciling schema for data/reports/summary_history_de.csv
+  → No missing columns.
+  → Extra columns: ['locale', 'success_rate'] (kept for safety)
+[SUCCESS] data/reports/summary_history_de.csv schema normalized (12 columns).
+[INFO] Reconciling schema for data/reports/summary_history_en.csv
+  → No missing columns.
+  → Extra columns: ['locale', 'success_rate'] (kept for safety)
+[SUCCESS] data/reports/summary_history_en.csv schema normalized (12 columns).
+✅ Metrics successfully generated → data/dashboard/generated/metrics.json
