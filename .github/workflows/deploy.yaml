@@ -41,9 +41,15 @@ jobs:
         run: |
           echo "📈 Generating metrics and charts..."
           python -m src.analytics.metrics_builder || true
-          python -m src.analytics.chart_generator || true
           echo "✅ Dashboard analytics complete."
 
+      - name: 🔍 Verify generated files before deploy
+        run: |
+            echo "Contents of generated folder:"
+            ls -R data/dashboard/generated || true
+            echo "Contents of reports folder:"
+            ls -R data/reports || true 
+        
       - name: 💾 Commit Updated Reports & Dashboard
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -27,7 +27,7 @@ const $id = (id) => document.getElementById(id);
 const safeNum = (n) => Number(n || 0).toFixed(2);
 const exists = (id) => !!document.getElementById(id);
 
-async function loadJSON(url = "/generated/metrics.json") {
+async function loadJSON(url = METRICS_URL) {
   try {
     // Always fetch fresh data, bypass browser cache
     const response = await fetch(url, {

@@ -1,61 +1,54 @@
-# Python
+# ==============================
+# 🧠 NetRunner Project .gitignore
+# ==============================
+
+# --- OS Files ---
+.DS_Store
+Thumbs.db
+
+# --- Python Cache & Virtual Envs ---
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual Environment
+.venv/
 venv/
 env/
-ENV/
 .env
-.venv
 
-# IDE specific files
-.idea/
-.vscode/
-*.swp
-*.swo
-.DS_Store
-
-# Project specific
-logs/*
+# --- Build & Logs ---
+logs/
 !logs/.gitkeep
+
+# --- Node / Web Dependencies ---
+node_modules/
+dist/
+build/
+.cache/
+*.log
+
+# --- Jupyter & Misc ---
+.ipynb_checkpoints/
+*.swp
+*~
+
+# --- Project Outputs (Allow only generated data) ---
+# Ignore all generated dashboard data except required files
 data/dashboard/generated/*
 !data/dashboard/generated/.gitkeep
+!data/dashboard/generated/*.json
+!data/dashboard/generated/*.csv
+!data/dashboard/generated/charts/**
 
-# Distribution / packaging
-.Python
-*.manifest
-*.spec
+# --- Reports (Allow only CSVs) ---
+data/reports/*
+!data/reports/*.csv
+!data/reports/.gitkeep
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
+# --- Temporary & Backup ---
+*.tmp
+*.bak
+*.old
 
-# Jupyter Notebook
-.ipynb_checkpoints
+# --- IDE Folders ---
+.vscode/
+.idea/
