@@ -27,32 +27,31 @@ const $id = (id) => document.getElementById(id);
 const safeNum = (n) => Number(n || 0).toFixed(2);
 const exists = (id) => !!document.getElementById(id);
 
-async function loadJSON(url) {
+async function loadJSON(url = "/generated/metrics.json") {
   try {
-    // Normalize to absolute root (Netlify-safe)
-    const base = window.location.origin;
-    const normalizedUrl = url.startsWith("http")
-      ? url
-      : `${base.replace(/\/$/, "")}/${url.replace(/^\/+/, "")}`;
+    // Always fetch fresh data, bypass browser cache
+    const response = await fetch(url, {
+      cache: "no-store",
+      headers: { "Accept": "application/json" }
+    });
 
-    // Add cache buster
-    const finalUrl = `${normalizedUrl}?t=${Date.now()}`;
-
-    console.log("📦 Loading metrics from:", finalUrl);
-    const res = await fetch(finalUrl, { cache: "no-store" });
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status} — ${res.statusText}`);
+    if (!response.ok) {
+      throw new Error(`Failed to load metrics: HTTP ${response.status}`);
     }
 
-    const data = await res.json();
-    if (!data || typeof data !== "object") {
-      throw new Error("Invalid JSON structure in metrics file.");
+    const data = await response.json();
+
+    // Basic validation to avoid empty or corrupted files
+    if (!data || typeof data !== "object" || !data.global) {
+      throw new Error("metrics.json format invalid or incomplete");
     }
 
+    console.log("✅ metrics.json loaded successfully");
     return data;
+
   } catch (err) {
-    console.warn("⚠️ metrics.json load failed:", err.message);
+    console.error("⚠️ metrics.json load failed →", err.message);
+    // optional fallback to dummy data for dashboard preview
     return null;
   }
 }
