@@ -33,7 +33,7 @@ build/
 
 # --- Project Outputs (Allow only generated data) ---
 # Ignore all generated dashboard data except required files
-data/dashboard/generated/*
+!data/dashboard/generated/*
 !data/dashboard/generated/.gitkeep
 !data/dashboard/generated/*.json
 !data/dashboard/generated/*.csv
