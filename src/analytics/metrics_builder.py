@@ -1,156 +1,97 @@
+# src/analytics/metrics_builder.py
+"""
+Simple metrics builder.
+Reads per-locale summary_history_{locale}.csv files in data/reports/
+Produces a single data/dashboard/generated/metrics.json file.
+
+This is intentionally minimal and deterministic so CI can rely on it.
+"""
 import os
+import glob
 import json
+import logging
+from collections import defaultdict
+from datetime import datetime
+
 import pandas as pd
-from datetime import datetime, timedelta
-from glob import glob
-from src.utils.Summary_fixed import reconcile_csv_schema
 
-REPORTS_DIR = "data/reports"
-OUTPUT_DIR = "data/dashboard/generated"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-METRICS_PATH = os.path.join(OUTPUT_DIR, "metrics.json")
+from src.logger import get_logger
 
-def safe_float(value):
-    try:
-        return float(value)
-    except (ValueError, TypeError):
-        return 0.0
+logger = get_logger(__name__)
 
-def safe_int(value):
-    try:
-        return int(float(value))
-    except (ValueError, TypeError):
-        return 0
+ROOT = os.getcwd()
+REPORTS_DIR = os.path.join(ROOT, "data", "reports")
+OUT_DIR = os.path.join(ROOT, "data", "dashboard", "generated")
+OUT_PATH = os.path.join(OUT_DIR, "metrics.json")
 
-def load_locale_data():
-    csv_files = glob(os.path.join(REPORTS_DIR, "summary_history_*.csv"))
-    locale_data = {}
-    for file in csv_files:
-        locale = os.path.basename(file).replace("summary_history_", "").replace(".csv", "")
+
+def _gather_locale_summaries():
+    files = glob.glob(os.path.join(REPORTS_DIR, "summary_history_*.csv"))
+    out = {}
+    for fn in files:
         try:
-            reconcile_csv_schema(file)
-            df = pd.read_csv(file)
+            df = pd.read_csv(fn)
             if df.empty:
                 continue
-            for col in [
-                "total_links_found", "unique_links", "duplicate_count",
-                "broken_links", "duration_sec", "crawler_efficiency"
-            ]:
-                if col in df.columns:
-                    df[col] = df[col].apply(safe_float)
-            for col in [
-                "localized_rescues", "canonical_matches",
-                "js_recoveries", "false_positive_avoided"
-            ]:
-                if col not in df.columns:
-                    df[col] = 0
-            df["locale"] = locale
-            locale_data[locale] = df
+            locale = os.path.basename(fn).split("summary_history_")[-1].replace(".csv", "")
+            # Keep last 14 runs only for compactness
+            df = df.sort_values("run_time").tail(14)
+            series = []
+            for _, r in df.iterrows():
+                series.append({
+                    "run_time": r.get("run_time"),
+                    "pages_checked": int(r.get("pages_checked", 0)),
+                    "total_links_found": int(r.get("total_links_found", 0)),
+                    "unique_links": int(r.get("unique_links", 0)),
+                    "broken_links": int(r.get("broken_links", 0)),
+                    "duration_mins": float(r.get("duration_mins", 0)),
+                    "success_rate": float(r.get("success_rate", 0)),
+                    "status": r.get("status", "")
+                })
+            out[locale] = {
+                "latest_run": series[-1]["run_time"] if series else None,
+                "series": series,
+                "summary": series[-1] if series else {}
+            }
         except Exception as e:
-            print(f"[WARN] Failed to load {file}: {e}")
-    return locale_data
+            logger.exception("Failed to parse %s: %s", fn, e)
+    return out
+
 
 def build_metrics():
-    locale_data = load_locale_data()
-    if not locale_data:
-        print("[ERROR] No locale summary files found.")
-        return None
+    os.makedirs(OUT_DIR, exist_ok=True)
+    payload = {
+        "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "global": {},
+        "locales": {}
+    }
 
-    combined = pd.concat(locale_data.values(), ignore_index=True)
-    combined["run_time"] = pd.to_datetime(combined["run_time"], errors="coerce")
-    combined = combined.dropna(subset=["run_time"])
+    locale_data = _gather_locale_summaries()
+    payload["locales"] = locale_data
 
-    total_runs = len(combined)
-    runs_today = len(combined[combined["run_time"].dt.date == datetime.utcnow().date()])
-    total_links = safe_int(combined["total_links_found"].sum())
-    total_broken = safe_int(combined["broken_links"].sum())
+    # Global rollup
+    total_runs = 0
+    total_links = 0
+    total_broken = 0
+    for loc, ld in locale_data.items():
+        s = ld.get("summary") or {}
+        total_runs += 1 if s else 0
+        total_links += int(s.get("total_links_found", 0) or 0)
+        total_broken += int(s.get("broken_links", 0) or 0)
 
-    # --- Compute error type breakdown ---
-    error_breakdown = {}
-    if "status_code" in combined.columns:
-        codes = combined["status_code"].fillna(0).astype(int)
-        error_breakdown = {
-            "404 Not Found": int((codes == 404).sum()),
-            "500+ Server Errors": int(((codes >= 500) & (codes < 600)).sum()),
-            "410 Gone": int((codes == 410).sum()),
-            "Soft 404s": int((combined["status"].astype(str).str.contains("SOFT", case=False)).sum()),
-            "403 / Cloudflare": int((codes == 403).sum())
-        }
-
-    global_metrics = {
+    payload["global"] = {
         "total_runs": total_runs,
-        "runs_today": runs_today,
         "total_links_checked": total_links,
         "total_broken_links": total_broken,
-        "average_duration_sec": round(combined["duration_sec"].mean(), 2),
-        "average_efficiency": round(combined["crawler_efficiency"].mean(), 2),
-        "overall_success_rate": round(100 - (total_broken / max(total_links, 1) * 100), 2),
-        "localized_rescues": safe_int(combined["localized_rescues"].sum()),
-        "canonical_matches": safe_int(combined["canonical_matches"].sum()),
-        "js_recoveries": safe_int(combined["js_recoveries"].sum()),
-        "false_positive_avoided": safe_int(combined["false_positive_avoided"].sum()),
+        "overall_success_rate": round(100 - ((total_broken / total_links) * 100) if total_links else 100, 2)
     }
 
-    locale_summaries = {}
-    for locale, df in locale_data.items():
-        latest = df.iloc[-1]
-        locale_summaries[locale] = {
-            "latest_run": str(latest.get("run_time")),
-            "total_runs": len(df),
-            "total_links": safe_int(df["total_links_found"].sum()),
-            "avg_success_rate": round(100 - (df["broken_links"].sum() / max(df["total_links_found"].sum(), 1) * 100), 2),
-            "avg_efficiency": round(df["crawler_efficiency"].mean(), 2),
-            "avg_duration_mins": round(df["duration_sec"].mean() / 60, 2),
-            "localized_rescues": safe_int(df["localized_rescues"].sum()),
-            "canonical_matches": safe_int(df["canonical_matches"].sum()),
-            "js_recoveries": safe_int(df["js_recoveries"].sum()),
-        }
+    # write single canonical metrics.json (no timestamp suffix)
+    try:
+        with open(OUT_PATH, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, indent=2)
+        logger.info("✅ Metrics successfully generated -> %s", OUT_PATH)
+    except Exception as e:
+        logger.exception("Failed to write metrics.json: %s", e)
 
-    cutoff_date = (datetime.utcnow() - timedelta(days=7)).date()
-    df_recent = combined[combined["run_time"].dt.date >= cutoff_date]
-    weekly_trend = (
-        df_recent.groupby(df_recent["run_time"].dt.date)
-        .agg({
-            "broken_links": "sum",
-            "total_links_found": "sum",
-            "crawler_efficiency": "mean",
-            "localized_rescues": "sum",
-            "canonical_matches": "sum"
-        })
-        .reset_index()
-        .rename(columns={"run_time": "date"})
-    )
-    weekly_trend["success_rate"] = round(
-        100 - (weekly_trend["broken_links"] / weekly_trend["total_links_found"] * 100), 2
-    )
-    weekly_trend["date"] = weekly_trend["date"].astype(str)
-
-    latest_run = combined.iloc[-1]
-    latest_summary = {
-        "time": str(latest_run.get("run_time")),
-        "broken_links": safe_int(latest_run.get("broken_links")),
-        "total_links": safe_int(latest_run.get("total_links_found")),
-        "duration_sec": safe_float(latest_run.get("duration_sec")),
-        "success_rate": round(100 - (latest_run.get("broken_links", 0) / max(latest_run.get("total_links_found", 1), 1) * 100), 2),
-        "localized_rescues": safe_int(latest_run.get("localized_rescues")),
-        "canonical_matches": safe_int(latest_run.get("canonical_matches")),
-        "js_recoveries": safe_int(latest_run.get("js_recoveries")),
-    }
-
-    metrics = {
-        "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
-        "global": global_metrics,
-        "locales": locale_summaries,
-        "latest_run": latest_summary,
-        "weekly_trend": weekly_trend.to_dict(orient="records"),
-        "error_breakdown": error_breakdown,
-    }
-
-    with open(METRICS_PATH, "w", encoding="utf-8") as f:
-        json.dump(metrics, f, indent=2, default=str)
-
-    print(f"✅ Metrics successfully generated → {METRICS_PATH}")
-    return metrics
-
-if __name__ == "__main__":
-    build_metrics()
+    return OUT_PATH

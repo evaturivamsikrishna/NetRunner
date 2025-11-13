@@ -1,2 +1,3 @@
 run_time,pages_checked,total_links_found,unique_links,duplicate_count,crawler_efficiency,broken_links,duration_sec,duration_mins,status,locale,success_rate
-2025-11-12 19:30:21,273,3588,3588,0,100.0,106,1040.4,17.34,⚠️ 106 broken,it,97.05
+2025-11-13 12:41:15,272,3761,3761,0,100.0,0,1230.45,20.51,ok,en,100.0
+en,ok,272,2560,2560,0,3072.45,2025-11-13 14:20:19

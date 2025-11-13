@@ -1,0 +1,14 @@
+{
+  "enabled_locales": [
+    "en",
+    "es-es",
+    "de-de",
+    "https:"
+  ],
+  "locales_map": {
+    "en": "en",
+    "es-es": "es-es",
+    "de-de": "de-de",
+    "https:": "https://apps.apple.com/us/developer/kwalee-ltd/id497961736?see-all=i-phonei-pad-apps"
+  }
+}

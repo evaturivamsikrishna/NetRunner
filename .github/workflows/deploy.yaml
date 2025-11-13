@@ -2,11 +2,10 @@ name: 🕹 NetRunner Website Monitor & Dashboard (Netlify)
 
 on:
   schedule:
-    - cron: "0 */3 * * *"   # ⏰ Every 3 hours
-  workflow_dispatch:         # 🧠 Allow manual run
+    - cron: "0 */3 * * *"     # every 3 hours
+  workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build-and-deploy:
@@ -17,61 +16,55 @@ jobs:
       - name: 🧾 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🐍 Set up Python
+      - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: 📦 Install Dependencies
+      - name: 📦 Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt || true
-          pip install pandas requests beautifulsoup4
+          pip install -r requirements.txt
 
-      - name: 🧰 Prepare Directories
+      - name: 🧰 Ensure Directories Exist
         run: |
-          mkdir -p reports generated logs
+          mkdir -p data/reports
+          mkdir -p data/dashboard/generated
+          mkdir -p logs
 
-      - name: 🌍 Run NetRunner Website Monitor
+      - name: 🌍 Run NetRunner Scanner
         run: |
-          echo "🚀 Running website health checks..."
-          python -m src.main || true
+          echo "🚀 Running NetRunner..."
+          python -m src.main --max-procs=4 || true
 
-      - name: 📊 Build Analytics Metrics
+      - name: 📊 Build Dashboard Metrics
         run: |
-          echo "📈 Generating metrics and charts..."
+          echo "📈 Building metrics..."
           python -m src.analytics.metrics_builder || true
-          echo "✅ Dashboard analytics complete."
 
-      - name: 🔍 Verify generated files before deploy
+      - name: 🔍 Verify Generated Output
         run: |
-            echo "Contents of generated folder:"
-            ls -R data/dashboard/generated || true
-            echo "Contents of reports folder:"
-            ls -R data/reports || true 
-        
+          echo "=== Generated Dashboard Files ==="
+          ls -R data/dashboard/generated || true
+          echo "=== Reports ==="
+          ls -R data/reports || true
+
       - name: 💾 Commit Updated Reports & Dashboard
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/dashboard/generated/*.json data/reports/*.csv || true
-          git commit -m "🔁 Auto-update metrics & dashboard [skip ci]" || echo "No changes to commit."
-          git push origin main || echo "⚠️ No push access — skipping."
-      - name: 🔍 Verify generated output
+          git add data/reports/*.csv data/dashboard/generated/*.json || true
+          git commit -m "🔁 Auto-update metrics & dashboard [skip ci]" || echo "No changes."
+          git push origin main || echo "No push access."
+
+      - name: 🌐 Trigger Netlify Deploy
+        if: success() && env.NETRUNNER_NETLIFY_HOOK != ''
+        env:
+          NETRUNNER_NETLIFY_HOOK: ${{ secrets.NETRUNNER_NETLIFY_HOOK }}
         run: |
-          echo "Listing dashboard generated files..."
-          ls -lh data/dashboard/generated || true
-          echo "Listing report files..."
-          ls -lh data/reports || true    
-          
-      - name: 🌐 Trigger Netlify Deployment
-        if: success()
-        run: |
-          echo "🔁 Triggering Netlify site rebuild..."
-          if curl -X POST -d '{}' ${{ secrets.NETRUNNER_NETLIFY_HOOK }}; then
-            echo "✅ Netlify deployment triggered successfully."
-          else
-            echo "⚠️ Netlify trigger failed. Please check hook URL or secrets."
-          fi
+          echo "🔁 Triggering Netlify deployment..."
+          curl -X POST -d '{}' ${{ env.NETRUNNER_NETLIFY_HOOK }} \
+            && echo "✅ Netlify triggered." \
+            || echo "⚠️ Netlify hook failed."

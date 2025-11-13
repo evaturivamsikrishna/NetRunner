@@ -1,62 +1,101 @@
 {
-  "generated_at": "2025-11-12 14:21:43 UTC",
-  "global": {
-    "total_runs": 2,
-    "runs_today": 2,
-    "total_links_checked": 7188,
-    "total_broken_links": 205,
-    "average_duration_sec": 1115.33,
-    "average_efficiency": 100.0,
-    "overall_success_rate": 97.15,
-    "localized_rescues": 0,
-    "canonical_matches": 0,
-    "js_recoveries": 0,
-    "false_positive_avoided": 0
-  },
+  "generated_at": "2025-11-13 16:18:30",
   "locales": {
-    "it": {
-      "latest_run": "2025-11-12 19:30:21",
-      "total_runs": 1,
-      "total_links": 3588,
-      "avg_success_rate": 97.05,
-      "avg_efficiency": 100.0,
-      "avg_duration_mins": 17.34,
-      "localized_rescues": 0,
-      "canonical_matches": 0,
-      "js_recoveries": 0
+    "ar": {
+      "locale": "ar",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "da": {
+      "locale": "da",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
     },
     "de": {
-      "latest_run": "2025-11-12 19:13:01",
-      "total_runs": 1,
-      "total_links": 3600,
-      "avg_success_rate": 97.25,
-      "avg_efficiency": 100.0,
-      "avg_duration_mins": 19.84,
-      "localized_rescues": 0,
-      "canonical_matches": 0,
-      "js_recoveries": 0
+      "locale": "de",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "es": {
+      "locale": "es",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "en": {
+      "locale": "en",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "fr": {
+      "locale": "fr",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "ja": {
+      "locale": "ja",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "ko": {
+      "locale": "ko",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "it": {
+      "locale": "it",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "nb": {
+      "locale": "nb",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "pl": {
+      "locale": "pl",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "ptbr": {
+      "locale": "ptbr",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "ptpt": {
+      "locale": "ptpt",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "ru": {
+      "locale": "ru",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "sv": {
+      "locale": "sv",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "tr": {
+      "locale": "tr",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "uk": {
+      "locale": "uk",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "zhcn": {
+      "locale": "zhcn",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
+    },
+    "zhtw": {
+      "locale": "zhtw",
+      "status": "error",
+      "error": "name 'cfg' is not defined"
     }
   },
-  "latest_run": {
-    "time": "2025-11-12 19:13:01",
-    "broken_links": 99,
-    "total_links": 3600,
-    "duration_sec": 1190.26,
-    "success_rate": 97.25,
-    "localized_rescues": 0,
-    "canonical_matches": 0,
-    "js_recoveries": 0
-  },
-  "weekly_trend": [
-    {
-      "date": "2025-11-12",
-      "broken_links": 205.0,
-      "total_links_found": 7188.0,
-      "crawler_efficiency": 100.0,
-      "localized_rescues": 0,
-      "canonical_matches": 0,
-      "success_rate": 97.15
-    }
-  ],
-  "error_breakdown": {}
+  "latest_broken_links": []
 }

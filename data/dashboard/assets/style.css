@@ -1,483 +1,194 @@
-/* ============================================================
-   🍏 Website Monitor Dashboard — iOS Dark Green Apple Theme
-   Full-width layout, glassy theme, square charts, fluid design
-   ============================================================ */
-
+/* data/dashboard/style.css
+   Clean Corporate WCAG — white/gray with blue accents
+*/
 :root {
-  --bg: #0b0d0f;
-  --card: #121418;
-  --glass: rgba(255, 255, 255, 0.05);
-  --border: rgba(255, 255, 255, 0.08);
-  --text: #e6e8ea;
-  --muted: #9ba0a6;
-  --accent: #34c759;
-  --accent-2: #4dd881;
-  --accent-warn: #ffd60a;
-  --accent-error: #ff453a;
-  --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  --radius: 14px;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, Roboto, sans-serif;
+  --bg: #ffffff;
+  --muted: #6b7280;
+  --text: #111827;
+  --accent: #1E6BD6;
+  --accent-2: #4A8EF1;
+  --danger: #D03238;
+  --success: #1E8E3E;
+  --border: #E5E7EB;
+  --card-bg: #FAFBFC;
+  --font-sans: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }
 
-/* ===== BASE ===== */
+* {
+  box-sizing: border-box
+}
+
+html,
 body {
+  height: 100%;
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  -webkit-font-smoothing: antialiased;
+  font-family: var(--font-sans);
+  line-height: 1.4
 }
 
-h1, h2, h3, h4 {
-  font-weight: 600;
-  color: var(--text);
-  letter-spacing: -0.2px;
-  margin: 0;
-
-}
-
-/* ===== HEADER ===== */
-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: rgba(20, 20, 25, 0.6);
-  backdrop-filter: blur(16px) saturate(180%);
-  padding: 14px 24px;
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-header h1 {
-  font-size: 1.1rem;
-  color: var(--accent);
-  font-weight: 700;
-}
-
-header nav a {
-  color: var(--muted);
-  margin: 0 12px;
-  text-decoration: none;
-  transition: 0.3s;
-  font-weight: 500;
-}
-
-header nav a:hover {
-  color: var(--accent);
-}
-
-/* ===== CONTAINER ===== */
-.container {
-  width: 100%;
-  max-width: 100%;
+.wrap {
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 20px 2vw;
-  box-sizing: border-box;
+  padding: 18px
 }
 
-/* ===== SECTION WRAPPER ===== */
-.section-tint {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 24px 2vw;
-  margin-bottom: 28px;
-  width: 100%;
-  max-width: 100%;
+.site-header {
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  padding: 12px 0
 }
 
-/* ===== HEALTH BAR ===== */
-.health-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 24px;
-  width: 100%;
+.site-header h1 {
+  margin: 0;
+  font-size: 20px
 }
 
-.health-card {
-  flex: 1;
-  min-width: 200px;
-  text-align: center;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px;
-  transition: transform 0.2s ease;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+.lede {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px
 }
-.health-card:hover { transform: translateY(-3px); }
-.health-card h3 { font-size: 0.9rem; color: var(--muted); margin-bottom: 6px; }
-.health-card div { font-size: 1.2rem; font-weight: 700; }
-.health-status.ok { color: var(--accent); }
-.health-status.warn { color: var(--accent-warn); }
-.health-status.err { color: var(--accent-error); }
 
-/* ===== KPI GRID ===== */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 14px;
-  width: 100%;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 12px 0
 }
+
 .kpi {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  text-align: center;
-  padding: 14px 10px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-}
-.kpi h3 { font-size: 0.9rem; color: var(--muted); margin-bottom: 4px; }
-.kpi .value { font-size: 1.4em; color: var(--accent); font-weight: 700; }
-
-/* ===== TOP ROW (Latest Summary + Charts) ===== */
-.top-row {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 24px;
-  width: 100%;
-  align-items: start;
-}
-@media (max-width: 1100px) {
-  .top-row { grid-template-columns: 1fr; }
+  padding: 12px;
+  border-radius: 8px
 }
 
-/* ============================================================
-   📊 Chart Grid Layouts
-   ============================================================ */
-
-/* Global Charts - strict 2 per row */
-.global .chart-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-  width: 100%;
-  justify-items: stretch;
-  align-items: stretch;
-}
-
-/* Latest and Locale Charts - adaptive full width */
-.chart-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
-  gap: 22px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* Chart cards */
-.chart-card {
-  background: linear-gradient(180deg, rgba(30, 32, 35, 0.95) 0%, rgba(15, 17, 20, 0.9) 100%);
-  border: 1px solid rgba(52, 199, 89, 0.15);
-  border-radius: var(--radius);
-  box-shadow: 0 6px 24px rgba(0, 255, 102, 0.12);
-  padding: 16px;
-  text-align: center;
-  max-height: 500px; /* ✅ Chart height capped */
-  aspect-ratio: auto; /* remove strict square lock */
-  transition: all 0.25s ease;
-}
-.chart-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 28px rgba(52, 199, 89, 0.3);
-  border-color: rgba(52, 199, 89, 0.4);
-}
-.chart-card h4 {
-  font-size: 0.95rem;
-  color: #c8facc;
-  margin: 0 0 8px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-}
-.chart-card canvas {
-  display: block;
-  margin: 0 auto;
-  width: 100% !important;
-  height: 100% !important;
-  max-height: 440px !important; /* ✅ Hard limit for clarity */
-  border-radius: 12px;
-  background: radial-gradient(circle at top, #111311 0%, #0a0b0a 100%);
-  box-shadow: inset 0 0 10px rgba(52, 199, 89, 0.08);
-}
-
-/* Locale-specific grids */
-.locale-section {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 16px;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: var(--radius);
-  padding: 20px 2vw;
-  border: 1px solid var(--border);
-  width: 100%;
-  max-width: 100%;
-}
-.locale-section .locale-info { min-width: 220px; max-width: 260px; }
-.locale-section .locale-charts {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-  gap: 14px;
-}
-
-/* ===== TABLE ===== */
-.table-wrap {
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: var(--radius);
-  padding: 10px;
-  border: 1px solid var(--border);
-  overflow: auto;
-  max-height: 440px;
-  width: 100%;
-}
-#broken-table {
-  width: 100%;
-  border-collapse: collapse;
+.kpi h3 {
+  margin: 0;
   font-size: 13px;
-  color: var(--text);
+  color: var(--muted)
 }
-#broken-table thead th {
-  position: sticky;
-  top: 0;
-  background: rgba(30, 32, 34, 0.95);
-  padding: 10px;
-  text-align: left;
-  color: var(--muted);
-  border-bottom: 1px solid var(--border);
-}
-#broken-table tbody td {
-  padding: 10px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
-}
-#broken-table tbody td a {
+
+.kpi-val {
+  font-size: 20px;
+  font-weight: 700;
   color: var(--accent);
-  text-decoration: none;
+  margin-top: 8px
 }
-#broken-table tbody td a:hover { text-decoration: underline; }
 
-/* ===== FILTERS & SEARCH ===== */
-#broken-search, #filter-locale, #filter-error {
-  max-width: 240px;
-  width: 100%;
-  padding: 8px 10px;
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px
+}
+
+.card {
+  background: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #1a1c1f;
-  color: var(--text);
+  padding: 12px;
+  border-radius: 8px
 }
 
-/* ===== PAGINATION ===== */
-.pagination {
+.card h3 {
+  margin: 0 0 8px 0;
+  color: var(--muted);
+  font-size: 15px
+}
+
+.locales-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+  margin-top: 12px
+}
+
+.locale-section {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  padding: 12px;
+  border-radius: 8px
+}
+
+.locale-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between
+}
+
+.locale-title {
+  display: flex;
+  align-items: center;
+  gap: 10px
+}
+
+.flag {
+  font-size: 26px
+}
+
+.locale-name {
+  font-weight: 700
+}
+
+.locale-code {
+  font-size: 12px;
+  color: var(--muted)
+}
+
+.locale-kpis {
+  display: flex;
+  gap: 12px;
+  align-items: center
+}
+
+.mini {
+  background: transparent;
+  padding: 6px
+}
+
+.mini .label {
+  font-size: 11px;
+  color: var(--muted)
+}
+
+.mini .val {
+  font-weight: 700;
+  color: var(--accent)
+}
+
+.locale-charts {
   display: flex;
   gap: 8px;
-  align-items: center;
-}
-.pagination button {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-.pagination button.active {
-  background: var(--accent);
-  color: #000;
+  margin-top: 12px
 }
 
-/* ===== FOOTER ===== */
-footer {
-  text-align: center;
-  color: var(--muted);
-  font-size: 13px;
-  padding: 24px 2vw;
-  margin-top: 24px;
+.chart-card.small {
+  flex: 1;
+  height: 160px;
+  padding: 6px
+}
+
+.site-footer {
   border-top: 1px solid var(--border);
-  width: 100%;
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 900px) {
-  .chart-grid { grid-template-columns: 1fr; }
-  .locale-section .locale-charts { grid-template-columns: 1fr; }
-  .top-row { grid-template-columns: 1fr; }
-  .summary-col, .charts-col { width: 100%; }
-  .chart-card { max-height: 420px; }
-} 
-
-/* ============================================================
-   ✨ UI Polish — Smooth Rendering + Title Alignment
-   ============================================================ */
-
-/* Prevent flicker during JS load */
-body.fade-in {
-  opacity: 0;
-  animation: fadeInSmooth 0.5s ease-out forwards;
-}
-@keyframes fadeInSmooth {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Make doughnut chart area visible always */
-canvas#chartError {
-  background: radial-gradient(circle at center, rgba(52,199,89,0.08) 0%, rgba(0,0,0,0.1) 100%);
-  border-radius: 12px;
-}
-
-/* Pulse for running status */
-.running-pulse {
-  animation: pulse 1.5s infinite;
-}
-@keyframes pulse {
-  0% { color: #34c759; text-shadow: 0 0 6px #34c759; }
-  50% { color: #85f2a3; text-shadow: 0 0 18px #34c759; }
-  100% { color: #34c759; text-shadow: 0 0 6px #34c759; }
-}
-
-/* ============================================================
-   🍏 Chart Layout Fix — Responsive and Consistent Height
-   ============================================================ */
-
-/* Prevent charts from getting fat or full-width stretched */
-.chart-card canvas {
-  display: block;
-  margin: 0 auto;
-  width: 100% !important;
-  max-height: 500px !important; /* ✅ Lock max height */
-  height: auto !important;
-  aspect-ratio: 1 / 1; /* ✅ Keep charts visually balanced */
-}
-
-/* Ensure bar width remains proportional on larger screens */
-.chartjs-render-monitor {
-  max-width: 100%;
-}
-
-/* Chart titles centered and clean */
-.chart-card h4 {
-  text-align: center;
-  color: #bdfcc4;
-  font-weight: 600;
-  letter-spacing: 0.4px;
-  margin-bottom: 10px;
-}
-
-/* Chart area padding for visibility */
-.chart-card {
-  padding: 16px;
-  border-radius: 14px;
-  background: linear-gradient(180deg, rgba(20, 22, 24, 0.95) 0%, rgba(15, 17, 20, 0.9) 100%);
-  border: 1px solid rgba(52, 199, 89, 0.2);
-  box-shadow: 0 6px 24px rgba(0, 255, 102, 0.08);
-}
-
-/* === Chart Alignment Fix === */
-.chart-card canvas {
-  display: block;
-  margin: 0 auto;
-  padding-top: 6px; /* aligns perfectly to top */
-  width: 100% !important;
-  max-height: 480px !important;
-  aspect-ratio: 1 / 1;
-  background: radial-gradient(circle at top, #101210 0%, #0b0d0b 100%);
-  border-radius: 12px;
-}
-
-/* Perfect title centering */
-.chart-card h4 {
-  text-align: center;
-  margin-bottom: 6px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  color: #bdfcc4;
-  line-height: 1.4;
-}
-
-
-/* ============================================================
-   🍏 Final Compact Layout Fix
-   ============================================================ */
-
-/* 🔒 Prevent horizontal scrolling completely */
-html, body {
-  overflow-x: hidden;
-  width: 100%;
-}
-
-/* 🧭 Container full-width fix */
-.container {
-  max-width: 100%;
-  padding: 20px 1.5vw;
-  box-sizing: border-box;
-  overflow-x: hidden;
-}
-
-/* 📉 Compact chart grid spacing */
-.chart-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); /* ✅ narrower */
-  gap: 18px; /* smaller gap */
-  width: 100%;
-  justify-content: center;
-  align-items: stretch;
-  overflow: hidden;
-}
-
-/* 📊 Chart card compact size */
-.chart-card {
   padding: 12px;
-  border-radius: 12px;
-  max-height: 420px; /* ✅ shorter charts */
-  aspect-ratio: auto;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 255, 102, 0.08);
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: 13px
 }
 
-/* 🖼️ Canvas compact height */
-.chart-card canvas {
-  display: block;
-  margin: 0 auto;
-  padding-top: 4px;
-  width: 100% !important;
-  height: auto !important;
-  max-height: 360px !important; /* ✅ reduced height */
-  border-radius: 10px;
-  background: radial-gradient(circle at top, #111311 0%, #0a0b0a 100%);
-  box-shadow: inset 0 0 8px rgba(52, 199, 89, 0.05);
-}
+/* responsive */
+@media (max-width:900px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr)
+  }
 
-/* 🧩 Global chart strict 2 per row */
-.global .chart-grid {
-  grid-template-columns: repeat(2, 1fr);
-  gap: 18px;
-}
+  .grid-2 {
+    grid-template-columns: 1fr
+  }
 
-/* 📏 Locale charts uniform, 2 per row */
-.locale-section .locale-charts {
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: 16px;
-}
-
-/* 🧍‍♂️ Center all chart titles perfectly */
-.chart-card h4 {
-  font-size: 0.9rem;
-  margin-bottom: 6px;
-  text-align: center;
-  color: #bdfcc4;
-  line-height: 1.4;
-  font-weight: 600;
-}
-
-/* 🪟 Prevent overflow on section containers */
-.section-tint {
-  max-width: 100%;
-  overflow: hidden;
+  .locales-grid {
+    grid-template-columns: 1fr
+  }
 }

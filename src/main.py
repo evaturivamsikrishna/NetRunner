@@ -1,106 +1,93 @@
 # src/main.py
+#!/usr/bin/env python3
+"""
+src/main.py - NetRunner orchestrator (v12)
+Run:
+  python -m src.main --max-procs 4 --locales en,es,de
+"""
 import os
+import sys
 import time
 import json
-import csv
-import requests
-import pandas as pd
+import argparse
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from src.analytics.metrics_builder import build_metrics
+from typing import List, Tuple, Dict, Any
+
+import pandas as pd
+
 from src.logger import get_logger
-from src.checker import run_checker
-from src.constants.locales import LOCALES
+from src.analytics.metrics_builder import build_metrics
+from src.checker import run_checker  # sync wrapper that runs async loop and returns tuple
+from src.locales.loader import resolved_enabled_locales, load_locales_config
 
-# ============================================================
-# CONFIG
-# ============================================================
-logger = get_logger()
-DATA_DIR = "data"
+logger = get_logger(__name__)
+
+ROOT = os.getcwd()
+DATA_DIR = os.path.join(ROOT, "data")
 REPORTS_DIR = os.path.join(DATA_DIR, "reports")
-DASHBOARD_DIR = os.path.join(DATA_DIR, "dashboard")
-GENERATED_DIR = os.path.join(DASHBOARD_DIR, "generated")
-METRICS_PATH = os.path.join(GENERATED_DIR, "metrics.json")
-LATEST_BROKEN_PATH = os.path.join(REPORTS_DIR, "broken_links_latest.csv")
-
-BASE_URL = "https://kwalee.com"     # ← change to your domain root if needed
-MAX_PROCESSES = 4                   # concurrent locales (multiprocessing)
-
-# NOTE: If run_checker uses asyncio or non-picklable state, ensure it is importable
-# ============================================================
-# HELPERS
-# ============================================================
+DASH_DIR = os.path.join(DATA_DIR, "dashboard")
+GEN_DIR = os.path.join(DASH_DIR, "generated")
+METRICS_PATH = os.path.join(GEN_DIR, "metrics.json")
+LATEST_BROKEN = os.path.join(REPORTS_DIR, "broken_links_latest.csv")
+DEFAULT_MAX_PROCS = int(os.getenv("MAX_PROCS", "4"))
+BASE_URL = os.getenv("BASE_URL", "https://kwalee.com")
 
 
-def find_locale_url_files():
-    """
-    Find locale-specific CSVs like urls_to_check_en.csv in /data
-    returns list of tuples: (locale_key, full_path)
-    """
-    locales = []
+def find_locale_csvs() -> List[Tuple[str, str]]:
+    out = []
     if not os.path.isdir(DATA_DIR):
-        return locales
-    for file in os.listdir(DATA_DIR):
-        if file.startswith("urls_to_check_") and file.endswith(".csv"):
-            locale = file.replace("urls_to_check_", "").replace(".csv", "")
-            locales.append((locale, os.path.join(DATA_DIR, file)))
-    return locales
+        return out
+    for fn in os.listdir(DATA_DIR):
+        if fn.startswith("urls_to_check_") and fn.endswith(".csv"):
+            locale = fn.split("urls_to_check_")[-1].replace(".csv", "")
+            out.append((locale, os.path.join(DATA_DIR, fn)))
+    return sorted(out, key=lambda x: x[0])
 
 
-def read_urls(file_path):
-    """Read URLs safely from CSV file (one URL per line)"""
+def read_urls(path: str) -> List[str]:
     try:
-        df = pd.read_csv(file_path, header=None)
+        df = pd.read_csv(path, header=None)
         return [str(u).strip() for u in df[0].tolist() if pd.notna(u)]
     except Exception as e:
-        get_logger().error(f"[ERROR] Failed to read URLs from {file_path}: {e}")
+        logger.exception("Failed to read URLs from %s: %s", path, e)
         return []
 
 
-def resolve_locale_path(locale_key: str) -> str:
+def check_locale_homepage(locale_code: str, locale_path_map: dict, base_url: str = BASE_URL, timeout: int = 10) -> bool:
     """
-    Map short locale key -> site path segment.
-    Examples:
-      en -> "/"     (empty mapping means base site)
-      es -> "/es-es/"
-      ptbr -> "/pt-br/"
-    """
-    mapped = LOCALES.get(locale_key, locale_key)
-    if not mapped:
-        return "/"
-    # ensure leading and trailing slash
-    return "/" + mapped.strip("/ ") + "/"
+    locale_code = 'da'
+    locale_path_map = { 'da': 'da-dk', 'es': 'es-es', 'en': '' }
 
+    Returns True if homepage URL is alive.
+    """
 
-def check_locale_homepage(locale_key: str, timeout=10):
-    """
-    Ping locale homepage before running. Returns True if live (200/301/302).
-    Tries:
-      1) root mapped path (resolve_locale_path)
-      2) fallback to base URL root (only if mapped path failed)
-    """
-    url_path = resolve_locale_path(locale_key)
-    url = BASE_URL.rstrip("/") + url_path
+    # Fetch actual mapped locale path (fallback to raw key)
+    path = locale_path_map.get(locale_code, locale_code)
+
+    # Build homepage URL correctly
+    if path == "":
+        url = base_url.rstrip("/") + "/"
+    else:
+        url = f"{base_url.rstrip('/')}/{path}/"
+
+    # --- Live check ---
     try:
         resp = requests.head(url, timeout=timeout, allow_redirects=True)
         code = resp.status_code
+
         if code in (200, 301, 302):
-            return True, url, code
-        # attempt lightweight GET for sites that block HEAD
-        resp2 = requests.get(url, timeout=timeout, allow_redirects=True)
-        if resp2.status_code in (200, 301, 302):
-            return True, url, resp2.status_code
-        # fallback: try base root (only if not root already)
-        if url_path != "/":
-            resp_root = requests.head(BASE_URL, timeout=timeout, allow_redirects=True)
-            if resp_root.status_code in (200, 301, 302):
-                return False, url, code  # locale path missing but root up
-        return False, url, code
-    except requests.RequestException as e:
-        return False, url, str(e)
+            logger.info(f"🌍 Locale {locale_code} OK → {url} ({code})")
+            return True
+
+        logger.warning(f"🌍 Locale {locale_code} homepage → {url} ({code}) → SKIP")
+        return False
+
+    except Exception as e:
+        logger.warning(f"🌍 Locale {locale_code} homepage failed → {url} ({e})")
+        return False
 
 
-def compute_metrics(total_links, broken_links, unique_links, duration_sec):
-    """Compute crawler metrics"""
+def compute_metrics(total_links: int, broken_links: int, unique_links: int, duration_sec: float) -> Dict[str, Any]:
     success_rate = 100 - ((broken_links / total_links) * 100 if total_links else 0)
     duplicate_count = total_links - unique_links
     efficiency = (unique_links / total_links * 100) if total_links else 0
@@ -112,50 +99,46 @@ def compute_metrics(total_links, broken_links, unique_links, duration_sec):
     }
 
 
-# ============================================================
-# WORKER (runs inside child process)
-# ============================================================
-def process_locale(locale, path):
+def process_locale_worker(locale: str, csv_path: str, reports_dir: str = REPORTS_DIR, base_url: str = BASE_URL) -> Dict[str, Any]:
     """
-    Run a locale in isolation (safe for multiprocessing).
-    Returns: (locale_key, summary_dict)
+    Worker executed in separate process. Must be picklable (top-level).
+    Returns summary dict for the locale.
     """
-    # create local logger in worker to avoid multiprocessing issues
-    sub_logger = get_logger(f"worker-{locale}")
+    t0 = time.time()
+    logger_local = get_logger(f"worker.{locale}")
+    logger_local.info("Starting worker for locale=%s, csv=%s", locale, csv_path)
 
-    # ensure reports directory exists in worker
-    os.makedirs(REPORTS_DIR, exist_ok=True)
+    urls = []
+    try:
+        urls = read_urls(csv_path)
+    except Exception as e:
+        logger_local.exception("Failed to read urls for %s: %s", locale, e)
+        return {"locale": locale, "status": "error", "error": str(e)}
 
-    urls = read_urls(path)
     if not urls:
-        sub_logger.warning(f"[WARN] No URLs found for {locale}")
-        return locale, {"status": "Skipped (No URLs)", "pages_checked": 0}
+        logger_local.warning("No URLs for %s — skipping", locale)
+        return {"locale": locale, "status": "skipped_no_urls", "pages_checked": 0}
 
-    # Check homepage availability using resolved path
-    live, checked_url, code_or_err = check_locale_homepage(locale)
-    if not live:
-        sub_logger.warning(f"⏭️ Skipping locale '{locale}' — homepage not available: {checked_url} ({code_or_err})")
-        return locale, {"status": "Skipped (homepage unavailable)", "pages_checked": 0, "checked_url": checked_url, "reason": str(code_or_err)}
+    if not check_locale_homepage(locale, cfg["locales"], base_url=base_url):
+        logger_local.info("Homepage unavailable for %s — skipping", locale)
+        return {"locale": locale, "status": "skipped_homepage_unavailable", "pages_checked": 0}
 
-    sub_logger.info(f"🌍 Starting locale: {locale.upper()} — {len(urls)} pages (homepage OK: {checked_url})")
-    start = time.time()
+    os.makedirs(reports_dir, exist_ok=True)
 
     try:
-        # run_checker should return: (broken_path, invalid_links, all_links, duration)
-        broken_path, invalid_links, all_links, duration = run_checker(urls, output_dir=REPORTS_DIR)
+        # run_checker returns (broken_path, invalid_links, all_links, duration)
+        broken_path, invalid_links, all_links, duration = run_checker(urls, output_dir=reports_dir)
     except Exception as e:
-        sub_logger.exception(f"❌ run_checker failed for {locale}: {e}")
-        return locale, {"status": "Failed (checker error)", "pages_checked": len(urls), "error": str(e)}
+        logger_local.exception("run_checker failed for %s: %s", locale, e)
+        return {"locale": locale, "status": "error", "error": str(e)}
 
-    unique_links = len({l.get("url") for l in all_links if l.get("url")})
-    metrics = compute_metrics(len(all_links), len(invalid_links), unique_links, duration)
-
+    metrics = compute_metrics(len(all_links), len(invalid_links), len({l.get("url") for l in all_links}), duration)
     summary = {
         "run_time": time.strftime("%Y-%m-%d %H:%M:%S"),
         "locale": locale,
         "pages_checked": len(urls),
         "total_links_found": len(all_links),
-        "unique_links": unique_links,
+        "unique_links": len({l.get("url") for l in all_links}),
         "duplicate_count": metrics["duplicate_count"],
         "crawler_efficiency": metrics["crawler_efficiency"],
         "broken_links": len(invalid_links),
@@ -165,93 +148,103 @@ def process_locale(locale, path):
         "status": "✅ Healthy" if len(invalid_links) == 0 else f"⚠️ {len(invalid_links)} broken",
     }
 
-    # Append summary CSV (worker safe append)
+    # append summary CSV
     try:
-        summary_path = os.path.join(REPORTS_DIR, f"summary_history_{locale}.csv")
-        df = pd.DataFrame([summary])
-        df.to_csv(summary_path, mode="a", header=not os.path.exists(summary_path), index=False)
-        sub_logger.info(f"[📈] Summary updated → {summary_path}")
-    except Exception as e:
-        sub_logger.warning(f"[WARN] Could not write summary CSV for {locale}: {e}")
+        summary_path = os.path.join(reports_dir, f"summary_history_{locale}.csv")
+        import pandas as pd
+        pd.DataFrame([summary]).to_csv(summary_path, mode="a", header=not os.path.exists(summary_path), index=False)
+        logger_local.info("Wrote summary CSV %s", summary_path)
+    except Exception:
+        logger_local.exception("Failed to write summary CSV for %s", locale)
 
-    sub_logger.info(f"✅ {locale.upper()} done — {summary['duration_mins']} mins, {summary['broken_links']} broken")
-    return locale, summary
+    logger_local.info("Completed locale=%s status=%s duration=%.2f mins", locale, summary["status"], summary["duration_mins"])
+    return summary
 
 
-# ============================================================
-# MAIN
-# ============================================================
+def parse_args():
+    p = argparse.ArgumentParser(description="NetRunner main runner")
+    p.add_argument("--locales", help="comma separated locale list override (csv base names)", default=None)
+    p.add_argument("--max-procs", type=int, default=DEFAULT_MAX_PROCS)
+    p.add_argument("--skip-metrics", action="store_true")
+    return p.parse_args()
+
+
 def main():
-    print("\n===============================================")
-    print("🚀 Website Monitor — Parallel Run Mode")
-    print("===============================================\n")
+    args = parse_args()
 
-    locales = find_locale_url_files()
-    if not locales:
-        logger.error("❌ No locale CSVs found under /data/")
+    os.makedirs(REPORTS_DIR, exist_ok=True)
+    os.makedirs(GEN_DIR, exist_ok=True)
+
+    all_csvs = find_locale_csvs()
+    if not all_csvs:
+        logger.error("No urls_to_check_{locale}.csv files found under data/. Create them first.")
         return
 
-    # ensure directories exist BEFORE launching workers (prevents races)
-    os.makedirs(REPORTS_DIR, exist_ok=True)
-    os.makedirs(GENERATED_DIR, exist_ok=True)
+    cfg = load_locales_config()
+    enabled = resolved_enabled_locales(cfg)
+
+    # CLI override
+    if args.locales:
+        allowed = set([s.strip() for s in args.locales.split(",") if s.strip()])
+        logger.info("CLI override locales -> %s", sorted(allowed))
+    else:
+        allowed = set(enabled) if enabled else set([loc for loc, _ in all_csvs])
+        logger.info("Locales to run -> %s", sorted(allowed))
+
+    targets = [(loc, path) for loc, path in all_csvs if loc in allowed]
+    if not targets:
+        logger.error("After filtering, no locales to run. Exiting.")
+        return
 
     start_all = time.time()
     results = {}
-    failed = []
+    logger.info("Starting processing with max_procs=%s", args.max_procs)
 
-    # Start multiprocessing pool
-    with ProcessPoolExecutor(max_workers=MAX_PROCESSES) as executor:
-        futures = {executor.submit(process_locale, loc, path): loc for loc, path in locales}
-        for future in as_completed(futures):
-            loc = futures[future]
+    with ProcessPoolExecutor(max_workers=args.max_procs) as exe:
+        futures = {exe.submit(process_locale_worker, loc, path, REPORTS_DIR, BASE_URL): loc for loc, path in targets}
+        for fut in as_completed(futures):
+            loc = futures[fut]
             try:
-                _, summary = future.result()
-                results[loc] = summary
-                logger.info(f"✅ {loc.upper()} completed — {summary.get('status')}")
+                res = fut.result()
+                results[loc] = res
+                logger.info("Locale %s finished -> %s", loc, res.get("status"))
             except Exception as e:
-                logger.exception(f"❌ {loc.upper()} failed during processing: {e}")
-                failed.append(loc)
+                logger.exception("Locale %s failed: %s", loc, e)
+                results[loc] = {"locale": loc, "status": "error", "error": str(e)}
 
-    # Run analytics generator (single process)
-    try:
-        logger.info("[INFO] Running analytics generator (build_metrics)...")
-        build_metrics()
-    except Exception as e:
-        logger.exception(f"[ERROR] build_metrics failed: {e}")
-
-    # Write combined metrics file
-    try:
-        metrics_obj = {
-            "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "locales": results,
-        }
-        with open(METRICS_PATH, "w", encoding="utf-8") as f:
-            json.dump(metrics_obj, f, indent=2)
-        logger.info(f"📈 Metrics written → {METRICS_PATH}")
-    except Exception as e:
-        logger.exception(f"[ERROR] Failed to write metrics.json: {e}")
-
-    # Optionally inject latest broken links CSV into metrics
-    if os.path.exists(LATEST_BROKEN_PATH):
+    # run metrics builder
+    if not args.skip_metrics:
         try:
-            with open(LATEST_BROKEN_PATH, encoding="utf-8") as f:
-                broken_data = list(csv.DictReader(f))
-            with open(METRICS_PATH, "r+", encoding="utf-8") as f:
-                data = json.load(f)
-                data["latest_broken_links"] = broken_data
-                f.seek(0)
-                json.dump(data, f, indent=2)
-                f.truncate()
-            logger.info(f"🔗 Injected {len(broken_data)} broken links → metrics.json")
-        except Exception as e:
-            logger.exception(f"[ERROR] Failed to inject broken links into metrics.json: {e}")
+            logger.info("Running metrics builder...")
+            build_metrics()
+        except Exception:
+            logger.exception("metrics_builder failed")
 
-    total_mins = round((time.time() - start_all) / 60, 2)
-    print("\n✅ Dashboard metrics successfully generated.")
-    print(f"📊 Dashboard: {DASHBOARD_DIR}/index.html")
-    print(f"📈 Metrics: {METRICS_PATH}")
-    print(f"🗂 Reports: {REPORTS_DIR}")
-    print(f"⏱ Total time: {total_mins} min")
+    # write final metrics.json (single canonical file)
+    try:
+        payload = {"generated_at": time.strftime("%Y-%m-%d %H:%M:%S"), "locales": results}
+        with open(METRICS_PATH, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, indent=2)
+        logger.info("Written metrics -> %s", METRICS_PATH)
+    except Exception:
+        logger.exception("Failed to write metrics.json")
+
+    # inject latest broken links if exist
+    if os.path.exists(LATEST_BROKEN):
+        try:
+            with open(LATEST_BROKEN, encoding="utf-8") as f:
+                import csv
+                broken = list(csv.DictReader(f))
+            with open(METRICS_PATH, "r+", encoding="utf-8") as f:
+                m = json.load(f)
+                m["latest_broken_links"] = broken
+                f.seek(0); json.dump(m, f, indent=2); f.truncate()
+            logger.info("Injected %d broken links into metrics.json", len(broken))
+        except Exception:
+            logger.exception("Failed to inject broken links")
+
+    total_min = round((time.time() - start_all) / 60.0, 2)
+    logger.info("All done — processed %d locales in %s minutes", len(results), total_min)
 
 
 if __name__ == "__main__":

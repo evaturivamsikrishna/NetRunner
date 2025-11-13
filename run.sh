@@ -1,196 +1,180 @@
 #!/usr/bin/env bash
-# ============================================================
-# 🚀 NetRunner — Website Monitor Full Pipeline (v3 CI-Ready)
-# ============================================================
-# Runs:
-#   1. Cleans caches and temp files
-#   2. Sets up virtualenv and installs deps
-#   3. Runs src.main (Parallel Async Crawler)
-#   4. Builds analytics (metrics.json)
-#   5. Generates logs, metrics, reports
-#
-# Usage:
-#   ./run.sh             → Full local pipeline
-#   ./run.sh --reset     → Clean caches & reports
-#   ./run.sh --ci        → Run in CI mode (non-interactive, no color)
-# ============================================================
+# =====================================================================
+#  NetRunner — Full Pipeline Runner (v12.2 FINAL)
+#  Production-grade • CI-Ready • Safe • Deterministic • Fault-Tolerant
+# =====================================================================
 
 set -euo pipefail
 IFS=$'\n\t'
 
-# --- Default Mode ---
+# ---------------------------------------------------------------------
+#  Flags & Modes
+# ---------------------------------------------------------------------
 CI_MODE=false
 RESET_MODE=false
+CLEAR_CACHE_MODE=false
+SKIP_LOCALE_UPDATE=false
+SKIP_METRICS=false
+MAX_PROCS=4   # default, override via cli or env
 
-# --- Parse Flags ---
 for arg in "$@"; do
   case "$arg" in
-    --ci) CI_MODE=true ;;
-    --reset) RESET_MODE=true ;;
+    --ci)                CI_MODE=true ;;
+    --reset)             RESET_MODE=true ;;
+    --clear-cache)       CLEAR_CACHE_MODE=true ;;
+    --skip-locales)      SKIP_LOCALE_UPDATE=true ;;
+    --skip-metrics)      SKIP_METRICS=true ;;
+    --max-procs=*)       MAX_PROCS="${arg#*=}" ;;
   esac
 done
 
-# --- Auto-detect CI (GitHub Actions / Netlify / Render) ---
-if [[ "${CI:-}" == "true" ]]; then
-  CI_MODE=true
-fi
+MAX_PROCS="${MAX_PROCS:-4}"
 
-# --- Color Codes (Disabled in CI) ---
+# ---------------------------------------------------------------------
+#  Colors (disabled in CI)
+# ---------------------------------------------------------------------
 if [[ "$CI_MODE" == true ]]; then
   RED=''; GREEN=''; YELLOW=''; BLUE=''; NC=''
 else
-  RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[1;33m'
+  BLUE='\033[0;34m'
+  NC='\033[0m'
 fi
 
-print_info()  { echo -e "${BLUE}[INFO]${NC} $1"; }
-print_ok()    { echo -e "${GREEN}[OK]${NC} $1"; }
-print_warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
-print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+log()    { echo -e "${BLUE}[INFO]${NC} $1"; }
+ok()     { echo -e "${GREEN}[OK]${NC} $1"; }
+warn()   { echo -e "${YELLOW}[WARN]${NC} $1"; }
+error()  { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$ROOT_DIR" || exit 1
+trap 'error "Unexpected pipeline failure!"' ERR
 
-DATA_DIR="${ROOT_DIR}/data"
-REPORTS_DIR="${DATA_DIR}/reports"
-DASHBOARD_DIR="${DATA_DIR}/dashboard"
-GEN_DIR="${DASHBOARD_DIR}/generated"
-LOG_DIR="${ROOT_DIR}/logs"
-VENV=".venv"
+# ---------------------------------------------------------------------
+#  Directories
+# ---------------------------------------------------------------------
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
 
-mkdir -p "$REPORTS_DIR" "$GEN_DIR" "$LOG_DIR"
+DATA_DIR="$ROOT/data"
+REPORTS_DIR="$DATA_DIR/reports"
+DASH_GEN="$DATA_DIR/dashboard/generated"
+LOG_DIR="$ROOT/logs"
+VENV="$ROOT/.venv"
 
-# ============================================================
-# 🧹 RESET MODE
-# ============================================================
+mkdir -p "$REPORTS_DIR" "$DASH_GEN" "$LOG_DIR"
+
+# ---------------------------------------------------------------------
+#  RESET MODE (DANGER: wipes all outputs)
+# ---------------------------------------------------------------------
 if [[ "$RESET_MODE" == true ]]; then
-  print_info "Performing full cleanup..."
-  rm -rf "$VENV" "$REPORTS_DIR" "$GEN_DIR" "$LOG_DIR" __pycache__ .pytest_cache .mypy_cache
-  find . -type f -name "*.pyc" -delete 2>/dev/null || true
-  print_ok "Project reset complete."
+  log "Performing FULL RESET (venv + reports + dashboard + logs)…"
+  rm -rf "$VENV" "$REPORTS_DIR" "$DASH_GEN" "$LOG_DIR"
+  ok "Reset complete."
   exit 0
 fi
 
-# ============================================================
-# 🧼 CLEANUP HELPERS
-# ============================================================
-clean_pre() {
-  print_info "Cleaning caches and logs..."
-  find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-  find . -type f -name "*.pyc" -delete 2>/dev/null || true
-  find "$LOG_DIR" -type f -name "*.log" -mtime +7 -delete 2>/dev/null || true
-}
-
-clean_post() {
-  print_info "Removing temporary files..."
-  find . -type f -name "*.tmp" -delete 2>/dev/null || true
-}
-
-# ============================================================
-# 🧠 ENVIRONMENT SETUP
-# ============================================================
-check_python() {
-  if ! command -v python3 &>/dev/null; then
-    print_error "Python 3.8+ is required."
-    exit 1
-  fi
-  PY_VER=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
-  print_info "Python version detected: ${PY_VER}"
-}
-
-setup_venv() {
-  print_info "Preparing virtualenv..."
-  if [[ ! -d "$VENV" ]]; then
-    python3 -m venv "$VENV"
-    print_ok "Virtualenv created."
-  fi
-  # shellcheck disable=SC1091
-  source "$VENV/bin/activate"
-  python -m pip install --upgrade pip >/dev/null 2>&1 || true
-}
-
-install_deps() {
-  if [[ -f "requirements.txt" ]]; then
-    print_info "Installing dependencies..."
-    if [[ "$CI_MODE" == true ]]; then
-      pip install -r requirements.txt --quiet
-    else
-      pip install -r requirements.txt >/dev/null 2>&1 || true
-    fi
-    print_ok "Dependencies ready."
-  else
-    print_warn "No requirements.txt found — skipping."
-  fi
-}
-
-# ============================================================
-# ⚙️ EXECUTION STAGES
-# ============================================================
-run_monitor() {
-  local TS
-  TS=$(date +"%Y%m%d_%H%M%S")
-  local LOG_FILE="${LOG_DIR}/monitor_${TS}.log"
-  print_info "Running src.main (parallel async crawler)... Log → $LOG_FILE"
-
-  if [[ -f "$VENV/bin/python" ]]; then
-    "$VENV/bin/python" -m src.main 2>&1 | tee "$LOG_FILE"
-  else
-    python3 -m src.main 2>&1 | tee "$LOG_FILE"
-  fi
-}
-
-run_analytics() {
-  local TS
-  TS=$(date +"%Y%m%d_%H%M%S")
-  local METRIC_LOG="${LOG_DIR}/analytics_${TS}.log"
-  print_info "Building metrics.json..."
-  
-  if [[ -f "$VENV/bin/python" ]]; then
-    "$VENV/bin/python" -m src.analytics.metrics_builder 2>&1 | tee "$METRIC_LOG"
-  else
-    python3 -m src.analytics.metrics_builder 2>&1 | tee "$METRIC_LOG"
-  fi
-}
-
-# ============================================================
-# 🧩 MAIN
-# ============================================================
-main() {
-  echo
-  echo "==============================================="
-  echo "🚀 NETRUNNER — FULL PIPELINE $( [[ "$CI_MODE" == true ]] && echo "(CI MODE)" )"
-  echo "==============================================="
-  echo
-
-  clean_pre
-  check_python
-  setup_venv
-  install_deps
-
-  CPU_COUNT=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo "4")
-  print_info "Detected ${CPU_COUNT} CPU cores."
-
-  run_monitor || true
-  run_analytics || true
-  clean_post
-
-  echo
-  echo "==============================================="
-  echo "✅ PIPELINE COMPLETE"
-  echo "-----------------------------------------------"
-  echo "📂 Reports:     ${REPORTS_DIR}"
-  echo "📊 Metrics:     ${GEN_DIR}/metrics.json"
-  echo "🖥 Dashboard:   ${DASHBOARD_DIR}/index.html"
-  echo "🪵 Logs:        ${LOG_DIR}"
-  echo "==============================================="
-  echo
-}
-
-# --- Disable fancy output for CI logs ---
-if [[ "$CI_MODE" == true ]]; then
-  export PYTHONUNBUFFERED=1
-  export DISABLE_TQDM=1
-  print_info "Running in CI mode — colors & progress bars disabled."
+# ---------------------------------------------------------------------
+#  CLEAR-CACHE MODE (safe)
+# ---------------------------------------------------------------------
+if [[ "$CLEAR_CACHE_MODE" == true ]]; then
+  log "Clearing Python caches & temp files…"
+  find "$ROOT" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+  find "$ROOT" -type f -name "*.pyc" -delete 2>/dev/null || true
+  find "$ROOT" -type f -name "*.tmp" -delete 2>/dev/null || true
+  ok "Cache cleared."
+  exit 0
 fi
 
-trap 'print_error "⚠️ Script aborted unexpectedly!"' ERR
-main "$@"
+# ---------------------------------------------------------------------
+#  PYTHON CHECK
+# ---------------------------------------------------------------------
+if ! command -v python3 &>/dev/null; then
+  error "Python3 not found. Install Python 3.9+."
+  exit 1
+fi
+
+PY_VER=$(python3 -c 'import sys;print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
+log "Python detected: $PY_VER"
+
+# ---------------------------------------------------------------------
+#  VIRTUALENV SETUP
+# ---------------------------------------------------------------------
+if [[ ! -d "$VENV" ]]; then
+  log "Creating virtualenv…"
+  python3 -m venv "$VENV"
+  ok "Virtualenv created."
+fi
+
+# shellcheck disable=SC1091
+source "$VENV/bin/activate"
+
+# ---------------------------------------------------------------------
+#  INSTALL DEPENDENCIES
+# ---------------------------------------------------------------------
+log "Installing dependencies…"
+pip install --upgrade pip --quiet || warn "Pip upgrade failed."
+pip install -r "$ROOT/requirements.txt" --quiet || {
+  error "Dependency install failed."
+  exit 1
+}
+ok "Dependencies installed."
+
+# ---------------------------------------------------------------------
+#  PRE-RUN CACHE CLEAN
+# ---------------------------------------------------------------------
+log "Cleaning Python caches…"
+find "$ROOT" -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+find "$ROOT" -name "*.pyc" -delete 2>/dev/null || true
+ok "Pre-run cleanup complete."
+
+# ---------------------------------------------------------------------
+#  LOCALE UPDATE
+# ---------------------------------------------------------------------
+if [[ "$SKIP_LOCALE_UPDATE" == false ]]; then
+  log "Updating locales from live site…"
+  if python3 -m src.locales.updater; then
+    ok "Locales updated."
+  else
+    warn "Locale updater failed — using existing locales.json."
+  fi
+else
+  warn "Skipping locale update (--skip-locales)"
+fi
+
+# ---------------------------------------------------------------------
+#  RUN MAIN PIPELINE
+# ---------------------------------------------------------------------
+log "Launching NetRunner (max-procs=$MAX_PROCS)…"
+MAIN_LOG="$LOG_DIR/main_$(date +"%Y%m%d_%H%M%S").log"
+
+if python3 -m src.main --max-procs="$MAX_PROCS" 2>&1 | tee "$MAIN_LOG"; then
+  ok "Main runner completed."
+else
+  error "Main runner failed — see $MAIN_LOG"
+  exit 1
+fi
+
+# ---------------------------------------------------------------------
+#  METRICS BUILDER
+# ---------------------------------------------------------------------
+if [[ "$SKIP_METRICS" == false ]]; then
+  log "Generating metrics dashboard…"
+  MET_LOG="$LOG_DIR/metrics_$(date +"%Y%m%d_%H%M%S").log"
+  if python3 -m src.analytics.metrics_builder 2>&1 | tee "$MET_LOG"; then
+    ok "Metrics generated."
+  else
+    error "metrics_builder failed — see $MET_LOG"
+  fi
+else
+  warn "Skipping metrics build (--skip-metrics)"
+fi
+
+# ---------------------------------------------------------------------
+#  FINAL SAFE CLEANUP
+# ---------------------------------------------------------------------
+log "Final cleanup…"
+find "$ROOT" -name "*.tmp" -delete 2>/dev/null || true
+ok "Cleanup done."
+
+echo -e "\n${GREEN}🎯 NetRunner v12.2 pipeline completed successfully.${NC}\n"

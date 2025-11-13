@@ -1,180 +1,90 @@
+<!-- data/dashboard/index.html -->
 <!doctype html>
 <html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Website Monitor Dashboard</title>
-
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- PapaParse for CSV parsing -->
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
-    <link rel="stylesheet" href="assets/style.css" />
+    <title>NetRunner — Website Monitor</title>
+    <link rel="stylesheet" href="/data/dashboard/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0" defer></script>
+    <script src="/data/dashboard/assets/locale_render.js" defer></script>
+    <script src="/data/dashboard/assets/chart.js" defer></script>
 </head>
 
 <body>
-    <!-- HEADER -->
-    <header>
-        <h1>Website Monitor Dashboard</h1>
-        <nav>
-            <a href="#latest">Latest</a>
-            <a href="#global">Global</a>
-            <a href="#locales">Locales</a>
-            <a href="#broken">Broken Links</a>
-        </nav>
+    <header class="site-header" role="banner">
+        <div class="wrap">
+            <h1>NetRunner — Website Monitor</h1>
+            <p class="lede">Automated link & health monitoring • <span id="locales-verified">0</span> locales verified
+            </p>
+        </div>
     </header>
 
-    <main class="container">
-
-        <!-- WEBSITE HEALTH BAR -->
-        <section class="health-row">
-            <div class="health-card">
-                <h3>Website Health</h3>
-                <div id="site-health" class="health-status ok">Healthy</div>
-            </div>
-            <div class="health-card">
-                <h3>Current Run</h3>
-                <div id="current-status">Completed</div>
-            </div>
-            <div class="health-card">
-                <h3>Next Run</h3>
-                <div id="next-run">Every 6 hours</div>
-            </div>
-        </section>
-
-        <!-- LATEST SECTION -->
-        <section class="section-tint latest" id="latest">
-            <div class="top-row">
-                <!-- Summary -->
-                <aside class="summary-col">
-                    <h2>Latest Summary</h2>
-                    <div class="kpi-grid">
-                        <div class="kpi">
-                            <h3>Success Rate</h3>
-                            <div id="latest-success" class="value">--%</div>
-                        </div>
-                        <div class="kpi">
-                            <h3>Duration (mins)</h3>
-                            <div id="latest-duration" class="value">--</div>
-                        </div>
-                        <div class="kpi">
-                            <h3>Total Links</h3>
-                            <div id="latest-total" class="value">--</div>
-                        </div>
-                        <div class="kpi">
-                            <h3>Broken Links</h3>
-                            <div id="latest-broken" class="value">--</div>
-                        </div>
-                    </div>
-                </aside>
-
-                <!-- Charts -->
-                <section class="charts-col">
-                    <h2>Latest Charts</h2>
-                    <div class="chart-grid">
-                        <div class="chart-card">
-                            <h4>Broken vs Valid (latest)</h4>
-                            <canvas id="chartValidBroken"></canvas>
-                        </div>
-                        <div class="chart-card">
-                            <h4>Error Type Breakdown</h4>
-                            <canvas id="chartError"></canvas>
-                        </div>
-                    </div>
-                </section>
-            </div>
-        </section>
-
-        <!-- GLOBAL SECTION -->
-        <section class="section-tint global" id="global">
-            <h2>Global Summary</h2>
-            <div class="kpi-grid">
-                <div class="kpi">
-                    <h3>Total Runs</h3>
-                    <div id="overall-runs" class="value">--</div>
-                </div>
-                <div class="kpi">
-                    <h3>Total Links</h3>
-                    <div id="overall-links" class="value">--</div>
-                </div>
-                <div class="kpi">
-                    <h3>Broken Links</h3>
-                    <div id="overall-broken" class="value">--</div>
-                </div>
-                <div class="kpi">
+    <main class="wrap" role="main">
+        <section class="health-row" aria-labelledby="latest-heading">
+            <h2 id="latest-heading">Latest Summary</h2>
+            <div class="kpi-grid" role="list">
+                <div class="kpi" role="listitem">
                     <h3>Success Rate</h3>
-                    <div id="overall-success" class="value">--%</div>
+                    <div id="latest-success" class="kpi-val">--%</div>
                 </div>
-            </div>
-
-            <h2>Global Charts</h2>
-            <div class="chart-grid">
-                <div class="chart-card chart-main">
-                    <h4>Success Rate (7d)</h4><canvas id="chartSuccess"></canvas>
+                <div class="kpi" role="listitem">
+                    <h3>Duration (mins)</h3>
+                    <div id="latest-duration" class="kpi-val">--</div>
                 </div>
-                <div class="chart-card">
-                    <h4>Efficiency (7d)</h4><canvas id="chartEff"></canvas>
+                <div class="kpi" role="listitem">
+                    <h3>Total Links</h3>
+                    <div id="latest-total" class="kpi-val">--</div>
                 </div>
-                <div class="chart-card">
-                    <h4>Broken Links (7d)</h4><canvas id="chartBroken"></canvas>
-                </div>
-                <div class="chart-card">
-                    <h4>Duration Trend</h4><canvas id="chartDuration"></canvas>
+                <div class="kpi" role="listitem">
+                    <h3>Broken Links</h3>
+                    <div id="latest-broken" class="kpi-val">--</div>
                 </div>
             </div>
         </section>
 
-        <!-- LOCALES SECTION -->
-        <section class="section-tint locales" id="locales">
-            <h2>Locale Charts & Summaries</h2>
-            <div id="locales-container"></div>
-        </section>
-
-        <!-- BROKEN LINKS TABLE -->
-        <section class="section-tint broken" id="broken">
-            <h2>Broken Links</h2>
-            <div class="table-controls">
-                <div style="display:flex;gap:10px;align-items:center;">
-                    <input id="broken-search" placeholder="Search..." />
-                    <select id="filter-locale">
-                        <option value="">All Locales</option>
-                    </select>
-                    <select id="filter-error">
-                        <option value="">All Error Types</option>
-                    </select>
+        <section aria-labelledby="global-heading">
+            <h2 id="global-heading">Global & Trends</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Success Rate by Locale</h3><canvas id="chartSuccess"
+                        aria-label="Success rate by locale"></canvas>
                 </div>
-                <div class="pagination" id="broken-pagination"></div>
+                <div class="card">
+                    <h3>Broken Links by Locale</h3><canvas id="chartBroken"
+                        aria-label="Broken links by locale"></canvas>
+                </div>
             </div>
 
-            <div class="table-wrap">
-                <table id="broken-table">
-                    <thead>
-                        <tr>
-                            <th class="id-col">#</th>
-                            <th>Locale</th>
-                            <th>Source</th>
-                            <th>URL</th>
-                            <th>Code</th>
-                            <th>Reason</th>
-                            <th>Snippet</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Efficiency</h3><canvas id="chartEff" aria-label="Crawler efficiency by locale"></canvas>
+                </div>
+                <div class="card">
+                    <h3>Duration</h3><canvas id="chartDuration" aria-label="Duration per locale"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section aria-labelledby="locales-heading">
+            <h2 id="locales-heading">Locales</h2>
+            <div id="locales-container" class="locales-grid" role="region" aria-live="polite"></div>
+        </section>
+
+        <section aria-labelledby="broken-heading">
+            <h2 id="broken-heading">Broken Links</h2>
+            <div id="broken-placeholder">
+                <p>Broken links (latest) are available in metrics.json under latest_broken_links. Use CSV/Export if
+                    needed.</p>
             </div>
         </section>
     </main>
 
-    <footer>
-        Generated by Website Monitor • Auto-updated dashboard
+    <footer class="site-footer" role="contentinfo">
+        <div class="wrap">NetRunner • Auto-generated dashboard</div>
     </footer>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
-    <!-- Locale renderer must load FIRST -->
-    <script src="assets/locale_render.js"></script>
-    <!-- Chart logic AFTER locale setup -->
-    <script src="assets/chart.js"></script>
 </body>
 
 </html>
